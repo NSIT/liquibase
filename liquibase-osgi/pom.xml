@@ -7,7 +7,7 @@
     <packaging>bundle</packaging>
 
     <parent>
-        <groupId>org.liquibase</groupId>
+        <groupId>com.insight.liquibase</groupId>
         <artifactId>liquibase-parent</artifactId>
         <version>3.4.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
@@ -19,7 +19,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.liquibase</groupId>
+            <groupId>com.insight.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>
             <version>${liquibase.version}</version>
         </dependency>
