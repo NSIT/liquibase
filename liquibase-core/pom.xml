@@ -8,7 +8,7 @@
     <packaging>jar</packaging>
 
     <parent>
-        <groupId>org.liquibase</groupId>
+        <groupId>com.insight.liquibase</groupId>
         <artifactId>liquibase-parent</artifactId>
         <version>3.4.3-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>

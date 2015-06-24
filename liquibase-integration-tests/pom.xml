@@ -7,7 +7,7 @@
 
     <parent>
         <artifactId>liquibase-parent</artifactId>
-        <groupId>org.liquibase</groupId>
+        <groupId>com.insight.liquibase</groupId>
         <version>3.4.3-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -36,12 +36,12 @@
         </dependency>
 
         <dependency>
-            <groupId>org.liquibase</groupId>
+            <groupId>com.insight.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.liquibase</groupId>
+            <groupId>com.insight.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
