@@ -274,6 +274,8 @@ public class Liquibase {
 
             update(contexts, labelExpression, checkLiquibaseTables);
 
+            outputFooter();
+
             output.flush();
         } catch (IOException e) {
             throw new LiquibaseException(e);
@@ -371,6 +373,8 @@ public class Liquibase {
 
         update(changesToApply, contexts, labelExpression);
 
+        outputFooter();
+
         try {
             output.flush();
         } catch (IOException e) {
@@ -405,6 +409,8 @@ public class Liquibase {
 
         update(tag, contexts, labelExpression);
 
+        outputFooter();
+
         try {
             output.flush();
         } catch (IOException e) {
@@ -434,6 +440,32 @@ public class Liquibase {
         }
         if (database instanceof MSSQLDatabase) {
             executor.execute(new RawSqlStatement("USE " + database.escapeObjectName(database.getDefaultCatalogName(), Catalog.class) + ";"));
+            executor.execute(new RawSqlStatement(
+                    "SET ANSI_NULLS, ANSI_PADDING, ANSI_WARNINGS, ARITHABORT, CONCAT_NULL_YIELDS_NULL, QUOTED_IDENTIFIER ON;" +
+                    StreamUtil.getLineSeparator() +
+                    "SET NUMERIC_ROUNDABORT OFF;"));
+            executor.execute(new RawSqlStatement("SET XACT_ABORT ON;"));
+            executor.execute(new RawSqlStatement("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"));
+        }
+    }
+
+    private void outputFooter() throws DatabaseException {
+        Executor executor = ExecutorService.getInstance().getExecutor(database);
+        if (database instanceof MSSQLDatabase) {
+            executor.execute(new RawSqlStatement(
+                    "DECLARE @SUCCESS [bit];" +
+                    StreamUtil.getLineSeparator() +
+                    "SET @SUCCESS = 1;" +
+                    StreamUtil.getLineSeparator() +
+                    "SET NOEXEC OFF;" +
+                    StreamUtil.getLineSeparator() +
+                    "IF @SUCCESS = 1" +
+                    StreamUtil.getLineSeparator() +
+                    StringUtils.indent("PRINT 'Update succeeded';") +
+                    StreamUtil.getLineSeparator() +
+                    "ELSE" +
+                    StreamUtil.getLineSeparator() +
+                    StringUtils.indent("PRINT 'Update failed';")));
         }
     }
 
@@ -466,6 +498,8 @@ public class Liquibase {
         outputHeader("Rollback " + changesToRollback + " Change(s) Script");
 
         rollback(changesToRollback, rollbackScript, contexts, labelExpression);
+
+        outputFooter();
 
         try {
             output.flush();
@@ -603,6 +637,8 @@ public class Liquibase {
 
         rollback(tagToRollBackTo, contexts, labelExpression);
 
+        outputFooter();
+
         try {
             output.flush();
         } catch (IOException e) {
@@ -689,6 +725,8 @@ public class Liquibase {
 
         rollback(dateToRollBackTo, contexts, labelExpression);
 
+        outputFooter();
+
         try {
             output.flush();
         } catch (IOException e) {
@@ -759,6 +797,8 @@ public class Liquibase {
 
         changeLogSync(contexts, labelExpression);
 
+        outputFooter();
+
         try {
             output.flush();
         } catch (IOException e) {
@@ -821,6 +861,8 @@ public class Liquibase {
         outputHeader("SQL to add all changesets to database history table");
 
         markNextChangeSetRan(contexts, labelExpression);
+
+        outputFooter();
 
         try {
             output.flush();
@@ -982,6 +1024,8 @@ public class Liquibase {
             ExecutorService.getInstance().setExecutor(database, oldTemplate);
             resetServices();
         }
+
+        outputFooter();
 
         try {
             output.flush();

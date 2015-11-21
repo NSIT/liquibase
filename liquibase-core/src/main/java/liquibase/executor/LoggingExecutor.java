@@ -94,10 +94,17 @@ public class LoggingExecutor extends AbstractExecutor {
                 if (statement == null) {
                     continue;
                 }
+
                 output.write(statement);
 
-
-                if (database instanceof MSSQLDatabase || database instanceof SybaseDatabase || database instanceof SybaseASADatabase) {
+                if (database instanceof MSSQLDatabase) {
+                    output.write(StreamUtil.getLineSeparator());
+                    output.write("GO");
+                    output.write(StreamUtil.getLineSeparator());
+                    output.write("IF @@ERROR <> 0 SET NOEXEC ON;");
+                    output.write(StreamUtil.getLineSeparator());
+                    output.write("GO");
+                } else if (database instanceof SybaseDatabase || database instanceof SybaseASADatabase) {
                     output.write(StreamUtil.getLineSeparator());
                     output.write("GO");
     //            } else if (database instanceof OracleDatabase) {
