@@ -22,6 +22,19 @@ import java.util.Map;
 
 @LiquibaseService(skip = true)
 public class LoggingExecutor extends AbstractExecutor {
+    private static final ThreadLocal<Boolean> TL_ERROR_HANDLING_ENABLED = new ThreadLocal<Boolean>(){
+        protected Boolean initialValue() {
+            return true;
+        }
+    };
+
+    public static boolean isErrorHandlingEnabled() {
+        return TL_ERROR_HANDLING_ENABLED.get();
+    }
+
+    public static void setErrorHandlingEnabled(boolean errorHandlingEnabled) {
+        TL_ERROR_HANDLING_ENABLED.set(errorHandlingEnabled);
+    }
 
     private Writer output;
     private Executor delegatedReadExecutor;
@@ -94,10 +107,20 @@ public class LoggingExecutor extends AbstractExecutor {
                 if (statement == null) {
                     continue;
                 }
+
                 output.write(statement);
 
-
-                if (database instanceof MSSQLDatabase || database instanceof SybaseDatabase || database instanceof SybaseASADatabase) {
+                if (database instanceof MSSQLDatabase) {
+                    output.write(StreamUtil.getLineSeparator());
+                    output.write("GO");
+                    
+                    if (isErrorHandlingEnabled()) {
+                        output.write(StreamUtil.getLineSeparator());
+                        output.write("IF @@ERROR <> 0 SET NOEXEC ON;");
+                        output.write(StreamUtil.getLineSeparator());
+                        output.write("GO");
+                    }
+                } else if (database instanceof SybaseDatabase || database instanceof SybaseASADatabase) {
                     output.write(StreamUtil.getLineSeparator());
                     output.write("GO");
     //            } else if (database instanceof OracleDatabase) {
