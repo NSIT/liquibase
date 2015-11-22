@@ -262,8 +262,8 @@ public class Liquibase {
         changeLogParameters.setLabels(labelExpression);
 
         Executor oldTemplate = ExecutorService.getInstance().getExecutor(database);
-        LoggingExecutor loggingExecutor = new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database);
-        ExecutorService.getInstance().setExecutor(database, loggingExecutor);
+        LoggingExecutor outputTemplate = new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database);
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
 
         outputHeader("Update Database Script");
 
@@ -273,6 +273,10 @@ public class Liquibase {
         try {
 
             update(contexts, labelExpression, checkLiquibaseTables);
+
+            ExecutorService.getInstance().setExecutor(database, outputTemplate);
+
+            outputFooter();
 
             output.flush();
         } catch (IOException e) {
@@ -364,12 +368,16 @@ public class Liquibase {
         changeLogParameters.setLabels(labelExpression);
 
         Executor oldTemplate = ExecutorService.getInstance().getExecutor(database);
-        LoggingExecutor loggingExecutor = new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database);
-        ExecutorService.getInstance().setExecutor(database, loggingExecutor);
+        LoggingExecutor outputTemplate = new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database);
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
 
         outputHeader("Update " + changesToApply + " Change Sets Database Script");
 
         update(changesToApply, contexts, labelExpression);
+
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
+
+        outputFooter();
 
         try {
             output.flush();
@@ -398,12 +406,16 @@ public class Liquibase {
         changeLogParameters.setLabels(labelExpression);
 
         Executor oldTemplate = ExecutorService.getInstance().getExecutor(database);
-        LoggingExecutor loggingExecutor = new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database);
-        ExecutorService.getInstance().setExecutor(database, loggingExecutor);
+        LoggingExecutor outputTemplate = new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database);
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
 
         outputHeader("Update to '" + tag + "' Database Script");
 
         update(tag, contexts, labelExpression);
+
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
+
+        outputFooter();
 
         try {
             output.flush();
@@ -434,6 +446,32 @@ public class Liquibase {
         }
         if (database instanceof MSSQLDatabase) {
             executor.execute(new RawSqlStatement("USE " + database.escapeObjectName(database.getDefaultCatalogName(), Catalog.class) + ";"));
+            executor.execute(new RawSqlStatement(
+                    "SET ANSI_NULLS, ANSI_PADDING, ANSI_WARNINGS, ARITHABORT, CONCAT_NULL_YIELDS_NULL, QUOTED_IDENTIFIER ON;" +
+                    StreamUtil.getLineSeparator() +
+                    "SET NUMERIC_ROUNDABORT OFF;"));
+            executor.execute(new RawSqlStatement("SET XACT_ABORT ON;"));
+            executor.execute(new RawSqlStatement("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"));
+        }
+    }
+
+    private void outputFooter() throws DatabaseException {
+        Executor executor = ExecutorService.getInstance().getExecutor(database);
+        if (database instanceof MSSQLDatabase) {
+            executor.execute(new RawSqlStatement(
+                    "DECLARE @SUCCESS [bit];" +
+                    StreamUtil.getLineSeparator() +
+                    "SET @SUCCESS = 1;" +
+                    StreamUtil.getLineSeparator() +
+                    "SET NOEXEC OFF;" +
+                    StreamUtil.getLineSeparator() +
+                    "IF @SUCCESS = 1" +
+                    StreamUtil.getLineSeparator() +
+                    StringUtils.indent("PRINT 'Update succeeded';") +
+                    StreamUtil.getLineSeparator() +
+                    "ELSE" +
+                    StreamUtil.getLineSeparator() +
+                    StringUtils.indent("PRINT 'Update failed';")));
         }
     }
 
@@ -461,11 +499,16 @@ public class Liquibase {
         changeLogParameters.setLabels(labelExpression);
 
         Executor oldTemplate = ExecutorService.getInstance().getExecutor(database);
-        ExecutorService.getInstance().setExecutor(database, new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database));
+        LoggingExecutor outputTemplate = new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database);
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
 
         outputHeader("Rollback " + changesToRollback + " Change(s) Script");
 
         rollback(changesToRollback, rollbackScript, contexts, labelExpression);
+
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
+
+        outputFooter();
 
         try {
             output.flush();
@@ -597,11 +640,16 @@ public class Liquibase {
         changeLogParameters.setLabels(labelExpression);
 
         Executor oldTemplate = ExecutorService.getInstance().getExecutor(database);
-        ExecutorService.getInstance().setExecutor(database, new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database));
+        LoggingExecutor outputTemplate = new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database);
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
 
         outputHeader("Rollback to '" + tagToRollBackTo + "' Script");
 
         rollback(tagToRollBackTo, contexts, labelExpression);
+
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
+
+        outputFooter();
 
         try {
             output.flush();
@@ -683,11 +731,16 @@ public class Liquibase {
         changeLogParameters.setLabels(labelExpression);
 
         Executor oldTemplate = ExecutorService.getInstance().getExecutor(database);
-        ExecutorService.getInstance().setExecutor(database, new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database));
+        LoggingExecutor outputTemplate = new LoggingExecutor(ExecutorService.getInstance().getExecutor(database), output, database);
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
 
         outputHeader("Rollback to " + dateToRollBackTo + " Script");
 
         rollback(dateToRollBackTo, contexts, labelExpression);
+
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
+
+        outputFooter();
 
         try {
             output.flush();
@@ -759,6 +812,10 @@ public class Liquibase {
 
         changeLogSync(contexts, labelExpression);
 
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
+
+        outputFooter();
+
         try {
             output.flush();
         } catch (IOException e) {
@@ -821,6 +878,10 @@ public class Liquibase {
         outputHeader("SQL to add all changesets to database history table");
 
         markNextChangeSetRan(contexts, labelExpression);
+
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
+
+        outputFooter();
 
         try {
             output.flush();
@@ -982,6 +1043,10 @@ public class Liquibase {
             ExecutorService.getInstance().setExecutor(database, oldTemplate);
             resetServices();
         }
+
+        ExecutorService.getInstance().setExecutor(database, outputTemplate);
+
+        outputFooter();
 
         try {
             output.flush();
