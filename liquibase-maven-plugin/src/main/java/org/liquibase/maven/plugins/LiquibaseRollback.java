@@ -3,11 +3,13 @@
 package org.liquibase.maven.plugins;
 
 import java.text.*;
+import java.util.Date;
 
 import liquibase.Contexts;
 import liquibase.LabelExpression;
 import liquibase.exception.LiquibaseException;
 import liquibase.Liquibase;
+import liquibase.util.ISODateFormat;
 import org.apache.maven.plugin.MojoFailureException;
 
 /**
@@ -35,9 +37,8 @@ public class LiquibaseRollback extends AbstractLiquibaseChangeLogMojo {
   protected int rollbackCount;
 
   /**
-   * The date to rollback the database to. The format of the date must match that of the
-   * <code>DateFormat.getDateInstance()</code> for the platform the plugin is executing
-   * on.
+   * The date to rollback the database to. The format should be one of the following ISO 8601 varaints:
+   * <code>yyyy-MM-dd</code>, <code>yyyy-MM-dd'T'HH:mm:ss</code> or <code>yyyy-MM-dd'T'HH:mm:ss.SSS</code>
    * @parameter expression="${liquibase.rollbackDate}"
    */
   protected String rollbackDate;
@@ -104,17 +105,21 @@ public class LiquibaseRollback extends AbstractLiquibaseChangeLogMojo {
         break;
       }
       case DATE: {
-        DateFormat format = DateFormat.getDateInstance();
+        Date dateToRollbackTo;
         try {
-          liquibase.rollback(format.parse(rollbackDate), rollbackScript,new Contexts(contexts), new LabelExpression(labels));
-        }
-        catch (ParseException e) {
-          String message = "Error parsing rollbackDate: " + e.getMessage();
-          if (format instanceof SimpleDateFormat) {
-            message += "\nDate must match pattern: " + ((SimpleDateFormat)format).toPattern();
+          dateToRollbackTo = new ISODateFormat().parse(rollbackDate);
+        } catch (ParseException e) {
+          // For backwards compatibility only, support DateFormat.getDateInstance() format
+          try {
+            DateFormat format = DateFormat.getDateInstance();
+            dateToRollbackTo = format.parse(rollbackDate);
+          } catch (ParseException suppressed) {
+            // Suppress this exception, wrap and propagate the original exception
+            throw new LiquibaseException("Unexpected date/time format.  The format should be one of the following " +
+                    "ISO 8601 varaints: \"yyyy-MM-dd\", \"yyyy-MM-dd'T'HH:mm:ss\" or \"yyyy-MM-dd'T'HH:mm:ss.SSS\"", e);
           }
-          throw new LiquibaseException(message, e);
         }
+        liquibase.rollback(dateToRollbackTo, rollbackScript,new Contexts(contexts), new LabelExpression(labels));
         break;
       }
       case TAG: {
