@@ -1,12 +1,8 @@
 package org.liquibase.maven.plugins;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 
 import liquibase.Contexts;
 import liquibase.LabelExpression;
@@ -100,23 +96,11 @@ public class LiquibaseRollbackSQL extends LiquibaseRollback {
 			throws LiquibaseException {
 		switch (type) {
 		case COUNT: {
-			liquibase.rollback(rollbackCount, rollbackScript,new Contexts(contexts), new LabelExpression(labels), outputWriter);
+			liquibase.rollback(rollbackCount, rollbackScript, new Contexts(contexts), new LabelExpression(labels), outputWriter);
 			break;
 		}
 		case DATE: {
-			DateFormat format = DateFormat.getDateInstance();
-			try {
-				liquibase.rollback(format.parse(rollbackDate), rollbackScript,new Contexts(contexts), new LabelExpression(labels),
-						outputWriter);
-			} catch (ParseException e) {
-				String message = "Error parsing rollbackDate: "
-						+ e.getMessage();
-				if (format instanceof SimpleDateFormat) {
-					message += "\nDate must match pattern: "
-							+ ((SimpleDateFormat) format).toPattern();
-				}
-				throw new LiquibaseException(message, e);
-			}
+			liquibase.rollback(parseDate(rollbackDate), rollbackScript, new Contexts(contexts), new LabelExpression(labels), outputWriter);
 			break;
 		}
 		case TAG: {
